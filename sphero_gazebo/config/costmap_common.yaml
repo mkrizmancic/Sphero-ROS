@@ -1,0 +1,14 @@
+robot_radius: 0.036
+
+update_frequency: 5
+publish_frequency: 2
+transform_tolerance: 0.5
+
+resolution: 0.01
+
+#layer definitions
+static:
+    map_topic: /map
+    subscribe_to_updates: true
+inflation:
+    inflation_radius: 0.05

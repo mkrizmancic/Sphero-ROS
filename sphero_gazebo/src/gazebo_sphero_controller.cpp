@@ -165,7 +165,7 @@ void GazeboSpheroController::publishWheelTF()
         std::string wheel_frame = gazebo_ros_->resolveTF(joints_[i]->GetChild()->GetName ());
         std::string wheel_parent_frame = gazebo_ros_->resolveTF(joints_[i]->GetParent()->GetName ());
 
-        ::ignition::math::Pose3d poseWheel = joints_[i]->GetChild()->GetRelativePose();
+        ::ignition::math::Pose3d poseWheel = joints_[i]->GetChild()->RelativePose();
 
         tf::Quaternion qt ( poseWheel.Rot().X(), poseWheel.Rot().Y(), poseWheel.Rot().Z(), poseWheel.Rot().W() );
         tf::Vector3 vt ( poseWheel.Pos().X(), poseWheel.Pos().Y(), poseWheel.Pos().Z() );
@@ -193,20 +193,27 @@ void GazeboSpheroController::UpdateChild()
     }
 
 
-    if ( odom_source_ == ENCODER ) UpdateOdometryEncoder();
+    if ( odom_source_ == ENCODER ) {
+        UpdateOdometryEncoder();
+    }
     common::Time current_time = parent->GetWorld()->SimTime();
     double seconds_since_last_update = ( current_time - last_update_time_ ).Double();
 
     if ( seconds_since_last_update > update_period_ ) {
-        if (this->publish_tf_) publishOdometry ( seconds_since_last_update );
-        if ( publishWheelTF_ ) publishWheelTF();
-        if ( publishWheelJointState_ ) publishWheelJointState();
+        if (this->publish_tf_) {
+            publishOdometry ( seconds_since_last_update );
+        }
+        if ( publishWheelTF_ ) {
+            publishWheelTF();
+        }
+        if ( publishWheelJointState_ ) {
+            publishWheelJointState();
+        }
 
         // Update robot in case new velocities have been requested
         getWheelVelocities();
 
         double current_speed[2];
-
         current_speed[LEFT] = joints_[LEFT]->GetVelocity ( 0 )   * ( wheel_diameter_ / 2.0 );
         current_speed[RIGHT] = joints_[RIGHT]->GetVelocity ( 0 ) * ( wheel_diameter_ / 2.0 );
 
@@ -214,8 +221,8 @@ void GazeboSpheroController::UpdateChild()
                 ( fabs ( wheel_speed_[LEFT] - current_speed[LEFT] ) < 0.01 ) ||
                 ( fabs ( wheel_speed_[RIGHT] - current_speed[RIGHT] ) < 0.01 ) ) {
             //if max_accel == 0, or target speed is reached
-            joints_[LEFT]->SetVelocity ( 0, wheel_speed_[LEFT]/ ( wheel_diameter_ / 2.0 ) );
-            joints_[RIGHT]->SetVelocity ( 0, wheel_speed_[RIGHT]/ ( wheel_diameter_ / 2.0 ) );
+            joints_[LEFT]->SetParam ("vel", 0, wheel_speed_[LEFT]/ ( wheel_diameter_ / 2.0 ) );
+            joints_[RIGHT]->SetParam ("vel", 0, wheel_speed_[RIGHT]/ ( wheel_diameter_ / 2.0 ) );
         } else {
             if ( wheel_speed_[LEFT]>=current_speed[LEFT] )
                 wheel_speed_instr_[LEFT]+=fmin ( wheel_speed_[LEFT]-current_speed[LEFT],  wheel_accel * seconds_since_last_update );
@@ -227,11 +234,11 @@ void GazeboSpheroController::UpdateChild()
             else
                 wheel_speed_instr_[RIGHT]+=fmax ( wheel_speed_[RIGHT]-current_speed[RIGHT], -wheel_accel * seconds_since_last_update );
 
-            // ROS_INFO("actual wheel speed = %lf, issued wheel speed= %lf", current_speed[LEFT], wheel_speed_[LEFT]);
-            // ROS_INFO("actual wheel speed = %lf, issued wheel speed= %lf", current_speed[RIGHT],wheel_speed_[RIGHT]);
+            ROS_INFO("actual wheel speed = %lf, issued wheel speed= %lf", current_speed[LEFT], wheel_speed_[LEFT]);
+            ROS_INFO("actual wheel speed = %lf, issued wheel speed= %lf", current_speed[RIGHT],wheel_speed_[RIGHT]);
 
-            joints_[LEFT]->SetVelocity ( 0,wheel_speed_instr_[LEFT] / ( wheel_diameter_ / 2.0 ) );
-            joints_[RIGHT]->SetVelocity ( 0,wheel_speed_instr_[RIGHT] / ( wheel_diameter_ / 2.0 ) );
+            joints_[LEFT]->SetParam ("vel", 0, wheel_speed_instr_[LEFT] / ( wheel_diameter_ / 2.0 ) );
+            joints_[RIGHT]->SetParam ("vel", 0, wheel_speed_instr_[RIGHT] / ( wheel_diameter_ / 2.0 ) );
         }
 
         last_update_time_+= common::Time ( update_period_ );
@@ -256,7 +263,7 @@ void GazeboSpheroController::getWheelVelocities()
     double va = rot_;
 
     wheel_speed_[LEFT] = vr; // + va * wheel_separation_ / 2.0;
-    wheel_speed_[RIGHT] =   - va * wheel_separation_ / 2.0;
+    wheel_speed_[RIGHT] =   va * wheel_separation_ / 2.0;
 }
 
 void GazeboSpheroController::cmdVelCallback ( const geometry_msgs::Twist::ConstPtr& cmd_msg )
@@ -264,6 +271,7 @@ void GazeboSpheroController::cmdVelCallback ( const geometry_msgs::Twist::ConstP
     boost::mutex::scoped_lock scoped_lock ( lock );
     x_ = cmd_msg->linear.x;
     rot_ = cmd_msg->angular.z;
+    ROS_INFO("CMD_VEL: x=%lf, z=%lf", x_, rot_);
 
 }
 
@@ -342,7 +350,7 @@ void GazeboSpheroController::publishOdometry ( double step_time )
         // getting data form gazebo world
         ::ignition::math::Pose3d pose = parent->WorldPose();
         qt = tf::Quaternion ( 0, 0, 0, 1 );
-        vt = tf::Vector3 ( pose.Pos.X(), pose.Pos.Y(), pose.Pos.Z() );
+        vt = tf::Vector3 ( pose.Pos().X(), pose.Pos().Y(), pose.Pos().Z() );
 
         odom_.pose.pose.position.x = vt.x();
         odom_.pose.pose.position.y = vt.y();
@@ -354,9 +362,9 @@ void GazeboSpheroController::publishOdometry ( double step_time )
         odom_.pose.pose.orientation.w = qt.w();
 
         // get velocity in /odom frame
-        ::ignition::math::Vector3 linear;
-        linear = parent->GetWorldLinearVel();
-        odom_.twist.twist.angular.z = parent->GetWorldAngularVel().Z();
+        ::ignition::math::Vector3<double> linear;
+        linear = parent->WorldLinearVel();
+        odom_.twist.twist.angular.z = parent->WorldAngularVel().Z();
 
         // convert velocity to child_frame_id (aka base_footprint)
         float yaw = pose.Rot().Yaw();

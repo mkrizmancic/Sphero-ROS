@@ -1,18 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
 <launch>
-
+  <!-- The index and the starting positoin are parameterized to allow for external configuration. -->
+  <arg name="index" default="1" />
   <arg name="x" default="0.0" />
   <arg name="y" default="0.0" />
-  <arg name="z" default="0.10" />
+  <arg name="z" default="0.04" />
 
   <!-- URDF and TF support -->
-  <param name="robot_description" command="$(find xacro)/xacro $(find sphero_description)/robots/sphero.gazebo.xacro" />
+  <param name="robot_description" command="$(find xacro)/xacro $(find sphero_description)/robots/sphero.gazebo.xacro prefix:=$(arg index)"/>
   <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" >
+    <param name="tf_prefix" value="sphero_$(arg index)" />
     <param name="publish_frequency" value="10.0"/>
   </node>
 
   <!-- Put a robot in gazebo, make it look pretty -->
-  <node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"
-        args="-urdf -x $(arg x) -y $(arg y) -z $(arg z) -model sphero -param robot_description"/>
+  <node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen" args="-urdf -x $(arg x) -y $(arg y) -z $(arg z) -model sphero_$(arg index) -param robot_description"/>
 
+  <!-- Move Base planner -->
+  <arg name="base_global_planner" default="navfn/NavfnROS"/>
+  <arg name="base_local_planner" default="base_local_planner/TrajectoryPlannerROS"/>
+
+  <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen">
+    <param name="base_global_planner" value="$(arg base_global_planner)"/>
+    <param name="base_local_planner" value="$(arg base_local_planner)"/>
+    <param name="clearing_rotation_allowed" value="false"/>
+    
+    <rosparam file="$(find sphero_gazebo)/config/planner.yaml" command="load"/>
+    <rosparam file="$(find sphero_gazebo)/config/costmap_common.yaml" command="load" ns="global_costmap" />
+    <rosparam file="$(find sphero_gazebo)/config/costmap_common.yaml" command="load" ns="local_costmap" />
+    <!-- Local costmap - needs size. -->
+    <rosparam file="$(find sphero_gazebo)/config/costmap_local.yaml" command="load" ns="local_costmap" />
+    <!-- Static global costmap - static map provides size. -->
+    <rosparam file="$(find sphero_gazebo)/config/costmap_global_static.yaml" command="load" ns="global_costmap" />
+    <!-- Robot base frames with parameterized tf_prefixes. -->
+    <param name="~/global_costmap/robot_base_frame" value="sphero_$(arg index)/base_rotation_link" />
+    <param name="~/local_costmap/robot_base_frame" value="sphero_$(arg index)/base_rotation_link" />
+  </node>
 
 </launch>
