@@ -50,8 +50,8 @@
       <updateRate>30</updateRate>
       <leftJoint>direction_joint</leftJoint>
       <rightJoint>rotation_joint</rightJoint>
-      <wheelSeparation>0.0381</wheelSeparation>
-      <wheelDiameter>0.05</wheelDiameter>
+      <wheelSeparation>0.0762</wheelSeparation>
+      <wheelDiameter>0.0762</wheelDiameter>
       <wheelAcceleration>0</wheelAcceleration>
       <wheelTorque>0.02</wheelTorque>
       <torque>0.025</torque>
@@ -61,8 +61,8 @@
       <positionTopic>pos</positionTopic>
       <publishWheelJointState>true</publishWheelJointState>
       <publishWheelTF>false</publishWheelTF>
-      <publishTf>1</publishTf> <!-- $$$$$$$$$$$$$$$$$$$$ -->
-      <odometrySource>world</odometrySource>  <!-- $$$$$$$$$$$$$$$$$$$$$ -->
+      <publishTf>1</publishTf>
+      <odometrySource>world</odometrySource>
       <robotBaseFrame>base_link</robotBaseFrame>
       <rosDebugLevel>na</rosDebugLevel>
     </plugin>

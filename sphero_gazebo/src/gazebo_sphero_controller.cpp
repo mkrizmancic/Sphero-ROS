@@ -118,6 +118,8 @@ void GazeboSpheroController::Load ( physics::ModelPtr _parent, sdf::ElementPtr _
       ROS_INFO("%s: Advertise odom on %s !", gazebo_ros_->info(), odometry_topic_.c_str());
     }
 
+    ROS_INFO("Parent:\n%s", parent);
+
     // start custom queue for diff drive
     this->callback_queue_thread_ =
         boost::thread ( boost::bind ( &GazeboSpheroController::QueueThread, this ) );
@@ -364,7 +366,9 @@ void GazeboSpheroController::publishOdometry ( double step_time )
         // get velocity in /odom frame
         ::ignition::math::Vector3<double> linear;
         linear = parent->WorldLinearVel();
-        odom_.twist.twist.angular.z = parent->WorldAngularVel().Z();
+
+        physics::LinkPtr childLink = parent->GetChildLink("base_rotation_link");
+        odom_.twist.twist.angular.z = childLink->WorldAngularVel().Z();
 
         // convert velocity to child_frame_id (aka base_footprint)
         float yaw = pose.Rot().Yaw();

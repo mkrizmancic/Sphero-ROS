@@ -5,9 +5,9 @@
     <inertial>
       <origin rpy="0 0 0" xyz="0.0 0.0 -0.025" />
       <mass value="0.15" />
-      <inertia ixx="0.54" ixy="0.0" ixz="0.0"
-        iyy="0.54" iyz="0.0"
-        izz="0.54"/>
+      <inertia ixx="10.54" ixy="0.0" ixz="0.0"
+        iyy="10.54" iyz="0.0"
+        izz="10.54"/>
     </inertial>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0.0" />
